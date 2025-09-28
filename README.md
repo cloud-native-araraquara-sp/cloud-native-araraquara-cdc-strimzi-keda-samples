@@ -80,7 +80,30 @@ kubectl -n keda rollout status deploy/keda-operator
 - **Multi-Fonte**: Suporte para mais de 50 fontes de eventos (Kafka, RabbitMQ, Azure, AWS, etc.)
 - **Nativo do Kubernetes**: Usa HPA e VPA padrão por baixo dos panos
 
-## 📊 Passo 4: Apache Kafka com Operador Strimzi
+## �️ Passo 4: Configuração do Banco PostgreSQL
+
+**Por que PostgreSQL primeiro?** Precisamos ter o banco de dados operacional antes de configurar o Kafka Connect com Debezium, pois o conector CDC precisa se conectar ao PostgreSQL para monitorar mudanças.
+
+**Destaques da Configuração**: Nossa configuração do PostgreSQL inclui configurações específicas para CDC:
+
+```bash
+# Instalar PostgreSQL com configuração pronta para CDC
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+helm install postgresql bitnami/postgresql -n eda-poc -f src/pg-values.yaml
+
+# Criar a tabela customer e schema inicial
+kubectl apply -f src/pg-bootstrap.yaml
+kubectl -n eda-poc wait --for=condition=complete job/pg-bootstrap --timeout=120s
+```
+
+**🔍 Configurações Críticas do PostgreSQL** (veja `src/pg-values.yaml`):
+
+- `wal_level = logical`: Habilita replicação lógica para CDC
+- `max_wal_senders = 10`: Máximo de processos WAL sender concorrentes
+- `max_replication_slots = 10`: Máximo de slots de replicação para consumidores CDC
+
+## 📊 Passo 5: Apache Kafka com Operador Strimzi
 
 **O que é Strimzi?** Strimzi fornece uma maneira de executar Apache Kafka no Kubernetes em várias configurações de deployment, tornando o gerenciamento do Kafka cloud-native.
 
@@ -104,9 +127,11 @@ kubectl -n eda-poc wait kafka/my-cluster --for=condition=Ready --timeout=300s
 - O cluster inclui brokers Kafka, ZooKeeper e serviços necessários
 - A condição Ready garante que todos os componentes estão operacionais
 
-## 🔄 Passo 5: Change Data Capture com Debezium
+## 🔄 Passo 6: Change Data Capture com Debezium
 
 **O que é CDC?** Change Data Capture permite rastrear e capturar mudanças em seu banco de dados em tempo real, transformando seu banco de dados em um stream de eventos.
+
+**Por que agora?** Agora que temos PostgreSQL e Kafka operacionais, podemos conectar ambos através do Debezium para capturar mudanças do banco em tempo real.
 
 ```bash
 # Fazer deploy do Kafka Connect com Debezium e auto-registro do conector PostgreSQL
@@ -121,27 +146,6 @@ kubectl -n eda-poc rollout status deploy/debezium-connect
 - **Write-Ahead Log (WAL)**: Log de transações do PostgreSQL que o Debezium lê
 - **Replicação Lógica**: Permite que sistemas externos se inscrevam para mudanças de dados
 - **Nomenclatura de Tópicos**: `dbserver1.public.customer` = `{servidor}.{schema}.{tabela}`
-
-## 🗄️ Passo 6: Configuração do Banco PostgreSQL
-
-**Destaques da Configuração**: Nossa configuração do PostgreSQL inclui configurações específicas para CDC:
-
-```bash
-# Instalar PostgreSQL com configuração pronta para CDC
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm repo update
-helm install postgresql bitnami/postgresql -n eda-poc -f src/pg-values.yaml
-
-# Criar a tabela customer e schema inicial
-kubectl apply -f src/pg-bootstrap.yaml
-kubectl -n eda-poc wait --for=condition=complete job/pg-bootstrap --timeout=120s
-```
-
-**🔍 Configurações Críticas do PostgreSQL** (veja `src/pg-values.yaml`):
-
-- `wal_level = logical`: Habilita replicação lógica para CDC
-- `max_wal_senders = 10`: Máximo de processos WAL sender concorrentes
-- `max_replication_slots = 10`: Máximo de slots de replicação para consumidores CDC
 
 ## 🎯 Passo 7: Deploy do Consumer Auto-Scaling com KEDA
 
@@ -366,4 +370,3 @@ kind delete cluster --name cncf-demo
 **🎉 Parabéns!** Você demonstrou com sucesso como as tecnologias CNCF trabalham juntas para criar aplicações inteligentes, orientadas a eventos e eficientes em custos no Kubernetes.
 
 **Conclusão Principal**: Aplicações modernas devem reagir a eventos de negócio, não apenas métricas de sistema, e o KEDA torna isso possível de forma nativa no Kubernetes.
-# cloud-native-araraquara-cdc-strimzi-keda-samples
