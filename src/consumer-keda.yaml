@@ -59,22 +59,13 @@ spec:
   maxReplicaCount: 3
   pollingInterval: 5
   cooldownPeriod: 60             
-  advanced:
-    horizontalPodAutoscalerConfig:
-      behavior:
-        scaleDown:
-          stabilizationWindowSeconds: 90
-          policies:
-            - type: Percent
-              value: 100
-              periodSeconds: 30
   triggers:
   - type: kafka
     metadata:
       bootstrapServers: my-cluster-kafka-bootstrap.eda-poc.svc:9092
       consumerGroup: eda-consumer
       topic: dbserver1.public.customer
-      lagThreshold: "1"
-      offsetResetPolicy: earliest
-      allowIdleConsumers: 'false'
-      scaleToZeroOnInvalidOffset: 'false'
+      lagThreshold: "50"
+      offsetResetPolicy: latest
+      allowIdleConsumers: 'true'
+      scaleToZeroOnInvalidOffset: 'true'

@@ -15,10 +15,10 @@ Esta demo apresenta um padrão completo de **Arquitetura Orientada a Eventos (ED
 ### 🎯 Visão Geral da Arquitetura
 
 ```text
-┌─────────────┐   Eventos CDC   ┌─────────────┐   Mensagens   ┌─────────────┐
+┌─────────────┐   Eventos CDC   ┌─────────────┐   Mensagens    ┌─────────────┐
 │ PostgreSQL  │ ──────────────→ │   Kafka     │ ─────────────→ │ Consumidor  │
-│ (WAL=logical) │                │  (Debezium) │                │   (KEDA)    │
-└─────────────┘                └─────────────┘                └─────────────┘
+│(WAL=logical)│                 │  (Debezium) │                │   (KEDA)    │
+└─────────────┘                 └─────────────┘                └─────────────┘
                                                                        ↑
                                                           Auto-scaling baseado
                                                             no lag de mensagens
@@ -136,7 +136,11 @@ kubectl -n eda-poc wait kafka/my-cluster --for=condition=Ready --timeout=300s
 ```bash
 # Fazer deploy do Kafka Connect com Debezium e auto-registro do conector PostgreSQL
 kubectl apply -f src/kafka-connect.yaml
+# Fazer deploy do Kafka Connect com Debezium e auto-registro do conector PostgreSQL
+kubectl apply -f src/kafka-connect.yaml
 
+# Aguardar o Kafka Connect ficar pronto
+kubectl -n eda-poc rollout status deploy/debezium-connect
 # Aguardar o Kafka Connect ficar pronto
 kubectl -n eda-poc rollout status deploy/debezium-connect
 ```
@@ -242,22 +246,6 @@ kubectl -n eda-poc logs -l app=cdc-consumer -f
 ```
 
 ## 🔧 Opções de Configuração Avançada
-
-### Ajuste Fino do Comportamento de Scaling do KEDA
-
-O `ScaledObject` em `src/consumer-keda.yaml` inclui configurações avançadas de scaling:
-
-```yaml
-advanced:
-  horizontalPodAutoscalerConfig:
-    behavior:
-      scaleDown:
-        stabilizationWindowSeconds: 90    # Prevenir scale-down rápido
-        policies:
-          - type: Percent
-            value: 100                    # Permitir scale-down agressivo
-            periodSeconds: 30
-```
 
 ### Múltiplos Triggers de Scaling
 
