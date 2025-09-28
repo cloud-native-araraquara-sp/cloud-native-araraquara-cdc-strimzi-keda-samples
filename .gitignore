@@ -1,0 +1,153 @@
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Kubernetes / Helm
+*.kubeconfig
+kubeconfig*
+.kube/
+helm-charts/*/charts/
+helm-charts/*/Chart.lock
+*.tgz
+
+# Kind clusters
+kind-config*.yaml
+cluster-config*.yaml
+
+# Logs
+*.log
+logs/
+*.out
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# Secrets (be extra careful with sensitive data)
+*secret*
+*Secret*
+*SECRET*
+*password*
+*Password*
+*PASSWORD*
+*token*
+*Token*
+*TOKEN*
+*key*
+*Key*
+*KEY*
+secrets/
+credentials/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Node.js (if using any tooling)
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Python (if using any Python tooling)
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Go (if using any Go tooling)
+vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Local development overrides
+*-local.yaml
+*-local.yml
+*-dev.yaml
+*-dev.yml
+*-development.yaml
+*-development.yml
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
