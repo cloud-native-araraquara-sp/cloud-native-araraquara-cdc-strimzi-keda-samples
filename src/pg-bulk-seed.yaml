@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pg-bulk-seed
+  namespace: eda-poc
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: psql
+        image: postgres:16
+        env:
+        - name: PGPASSWORD
+          value: "postgres"
+        command: ["bash","-lc"]
+        args:
+        - |
+          until psql -h postgresql -U postgres -d appdb -c "select 1" >/dev/null 2>&1; do
+            echo "Aguardando Postgres..."; sleep 2
+          done
+          psql -h postgresql -U postgres -d appdb -c "
+          INSERT INTO public.customer(name, email)
+          SELECT
+            'User ' || substring(md5(random()::text || i::text) for 8),
+            'user_' || md5(random()::text || clock_timestamp()::text || i::text) || '@example.com'
+          FROM generate_series(1, 5000) AS gs(i)
+          ON CONFLICT (email) DO NOTHING;
+          "

@@ -1,0 +1,14 @@
+fullnameOverride: postgresql
+
+auth:
+  username: postgres
+  password: postgres
+  database: appdb
+
+primary:
+  persistence:
+    enabled: false
+  extendedConfiguration: |-
+    wal_level = logical
+    max_wal_senders = 10
+    max_replication_slots = 10

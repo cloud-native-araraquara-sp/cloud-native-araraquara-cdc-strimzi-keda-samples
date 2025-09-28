@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdc-consumer
+  namespace: eda-poc
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: cdc-consumer
+  template:
+    metadata:
+      labels:
+        app: cdc-consumer
+    spec:
+      terminationGracePeriodSeconds: 30    
+      containers:
+      - name: consumer
+        image: bitnami/kafka:3
+        command: ["bash","-lc"]
+        args:
+        - |
+          set -e
+          term() { echo "[shutdown] SIGTERM recebido, encerrando consumer..."; kill -TERM "$child" 2>/dev/null || true; }
+          trap term TERM INT
+
+          /opt/bitnami/kafka/bin/kafka-console-consumer.sh \
+            --bootstrap-server my-cluster-kafka-bootstrap.eda-poc:9092 \
+            --topic dbserver1.public.customer \
+            --group eda-consumer \
+            --from-beginning \
+            --consumer-property enable.auto.commit=true \
+            --consumer-property auto.commit.interval.ms=10 &
+          child=$!
+          wait "$child"
+          echo "[shutdown] consumer saiu; fim."        
+        lifecycle:
+          preStop:
+            exec:
+              command: ["sh","-lc","sleep 5"]        
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cdc-consumer-so
+  namespace: eda-poc
+spec:
+  scaleTargetRef:
+    name: cdc-consumer
+  minReplicaCount: 0
+  maxReplicaCount: 3
+  pollingInterval: 5
+  cooldownPeriod: 60             
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 90
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 30
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: my-cluster-kafka-bootstrap.eda-poc.svc:9092
+      consumerGroup: eda-consumer
+      topic: dbserver1.public.customer
+      lagThreshold: "1"
+      offsetResetPolicy: earliest
+      allowIdleConsumers: 'false'
+      scaleToZeroOnInvalidOffset: 'false'

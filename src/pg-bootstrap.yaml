@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pg-bootstrap
+  namespace: eda-poc
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: psql
+        image: postgres:16
+        env:
+        - name: PGPASSWORD
+          value: "postgres"
+        command: ["bash","-lc"]
+        args:
+        - |
+          until psql -h postgresql -U postgres -d appdb -c "select 1" >/dev/null 2>&1; do
+            echo "Aguardando Postgres..."; sleep 2
+          done
+          psql -h postgresql -U postgres -d appdb <<'SQL'
+          CREATE TABLE IF NOT EXISTS public.customer (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            created_at TIMESTAMPTZ DEFAULT now()
+          );
+          INSERT INTO public.customer (name,email)
+          VALUES ('cncf','cnfcf@example.com')
+          ON CONFLICT DO NOTHING;
+          SQL
+
+

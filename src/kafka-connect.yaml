@@ -1,0 +1,116 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: dbserver1.public.customer
+  namespace: eda-poc
+  labels:
+    strimzi.io/cluster: my-cluster
+spec:
+  partitions: 3
+  replicas: 1
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: debezium-pg-connector
+  namespace: eda-poc
+data:
+  config.json: |
+    {
+      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+      "tasks.max": "1",
+      "database.hostname": "postgresql",
+      "database.port": "5432",
+      "database.user": "postgres",
+      "database.password": "postgres",
+      "database.dbname": "appdb",
+      "topic.prefix": "dbserver1",
+      "slot.name": "debezium",
+      "plugin.name": "pgoutput",
+      "publication.autocreate.mode": "filtered",
+      "publication.name": "dbz_publication",
+      "schema.include.list": "public",
+      "table.include.list": "public.customer",
+      "snapshot.mode": "initial",
+      "tombstones.on.delete": "false"
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debezium-connect
+  namespace: eda-poc
+spec:
+  selector:
+    matchLabels:
+      app: debezium-connect
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: debezium-connect
+    spec:
+      volumes:
+        - name: connector-config
+          configMap:
+            name: debezium-pg-connector
+      containers:
+        - name: connect
+          image: quay.io/debezium/connect:2.7.3.Final
+          ports: [ { containerPort: 8083 } ]
+          env:
+            - { name: BOOTSTRAP_SERVERS, value: "my-cluster-kafka-bootstrap:9092" }
+            - { name: GROUP_ID, value: "connect-cluster" }
+            - { name: CONFIG_STORAGE_TOPIC, value: "connect-configs" }
+            - { name: OFFSET_STORAGE_TOPIC, value: "connect-offsets" }
+            - { name: STATUS_STORAGE_TOPIC, value: "connect-status" }
+            - { name: KEY_CONVERTER, value: "org.apache.kafka.connect.json.JsonConverter" }
+            - { name: VALUE_CONVERTER, value: "org.apache.kafka.connect.json.JsonConverter" }
+            - { name: KEY_CONVERTER_SCHEMAS_ENABLE, value: "false" }
+            - { name: VALUE_CONVERTER_SCHEMAS_ENABLE, value: "false" }
+            # Fix Apple Silicon / Java 21 em aarch64
+            - { name: JAVA_TOOL_OPTIONS, value: "-XX:UseSVE=0" }
+            - { name: KAFKA_OPTS, value: "-XX:UseSVE=0" }
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet: { path: /connectors, port: 8083 }
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 12
+        - name: connector-registrar
+          image: curlimages/curl:8.10.1
+          volumeMounts:
+            - { name: connector-config, mountPath: /etc/connector }
+          command: ["sh","-lc"]
+          args:
+            - |
+              set -e
+              until curl -sf http://localhost:8083/connectors >/dev/null; do sleep 3; done
+              curl -sS -X PUT http://localhost:8083/connectors/pg-customer-cdc/config \
+                   -H 'Content-Type: application/json' \
+                   --data-binary @/etc/connector/config.json
+              tail -f /dev/null
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: debezium
+  namespace: eda-poc
+spec:
+  selector: { app: debezium-connect }
+  ports:
+    - { name: http, port: 8083, targetPort: 8083 }
