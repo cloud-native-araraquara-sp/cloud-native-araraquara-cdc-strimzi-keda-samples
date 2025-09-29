@@ -13,15 +13,17 @@ spec:
       labels:
         app: cdc-consumer
     spec:
-      terminationGracePeriodSeconds: 30    
+      terminationGracePeriodSeconds: 60
       containers:
       - name: consumer
         image: bitnami/kafka:3
+        imagePullPolicy: IfNotPresent
         command: ["bash","-lc"]
         args:
         - |
-          set -e
-          term() { echo "[shutdown] SIGTERM recebido, encerrando consumer..."; kill -TERM "$child" 2>/dev/null || true; }
+          set -Eeuo pipefail
+          echo "Consumindo com consumer group 'eda-consumer'..."
+          term() { echo "[shutdown] SIGTERM recebido, encerrando..."; kill -TERM "$child" 2>/dev/null || true; }
           trap term TERM INT
 
           /opt/bitnami/kafka/bin/kafka-console-consumer.sh \
@@ -30,21 +32,26 @@ spec:
             --group eda-consumer \
             --from-beginning \
             --consumer-property enable.auto.commit=true \
-            --consumer-property auto.commit.interval.ms=10 &
+            --consumer-property auto.commit.interval.ms=1000 \
+            --consumer-property max.poll.interval.ms=60000 \
+            --consumer-property session.timeout.ms=45000 \
+            --consumer-property heartbeat.interval.ms=15000 &
           child=$!
-          wait "$child"
-          echo "[shutdown] consumer saiu; fim."        
+          wait "$child" || true
+          code=$?
+          echo "[shutdown] consumer exit=$code -> forçando 0"
+          exit 0
         lifecycle:
           preStop:
             exec:
-              command: ["sh","-lc","sleep 5"]        
+              command: ["sh","-lc","echo 'draining endpoints...'; sleep 5"]
         resources:
           requests:
-            cpu: "100m"
-            memory: "128Mi"
+            cpu: "50m"
+            memory: "64Mi"
           limits:
-            cpu: "500m"
-            memory: "512Mi"
+            cpu: "200m"
+            memory: "256Mi"
 
 ---
 apiVersion: keda.sh/v1alpha1
@@ -55,17 +62,32 @@ metadata:
 spec:
   scaleTargetRef:
     name: cdc-consumer
-  minReplicaCount: 0
-  maxReplicaCount: 3
-  pollingInterval: 5
-  cooldownPeriod: 30             
+  minReplicaCount: 0          
+  maxReplicaCount: 5          
+  pollingInterval: 10         
+  cooldownPeriod: 30          
   triggers:
   - type: kafka
     metadata:
-      bootstrapServers: my-cluster-kafka-bootstrap.eda-poc.svc:9092
+      bootstrapServers: my-cluster-kafka-bootstrap.eda-poc:9092
       consumerGroup: eda-consumer
       topic: dbserver1.public.customer
       lagThreshold: "5"
       offsetResetPolicy: latest
       allowIdleConsumers: 'true'
       scaleToZeroOnInvalidOffset: 'true'
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 30
+          policies:
+            - type: Percent
+              value: 200
+              periodSeconds: 15
+        scaleDown:
+          stabilizationWindowSeconds: 30
+          policies:
+            - type: Percent
+              value: 100
+              periodSeconds: 30
