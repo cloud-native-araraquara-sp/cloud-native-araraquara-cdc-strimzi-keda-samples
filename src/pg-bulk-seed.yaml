@@ -24,6 +24,6 @@ spec:
           SELECT
             'User ' || substring(md5(random()::text || i::text) for 8),
             'user_' || md5(random()::text || clock_timestamp()::text || i::text) || '@example.com'
-          FROM generate_series(1, 5000) AS gs(i)
+          FROM generate_series(1, 10000) AS gs(i)
           ON CONFLICT (email) DO NOTHING;
           "
