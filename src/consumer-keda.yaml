@@ -58,14 +58,14 @@ spec:
   minReplicaCount: 0
   maxReplicaCount: 3
   pollingInterval: 5
-  cooldownPeriod: 60             
+  cooldownPeriod: 30             
   triggers:
   - type: kafka
     metadata:
       bootstrapServers: my-cluster-kafka-bootstrap.eda-poc.svc:9092
       consumerGroup: eda-consumer
       topic: dbserver1.public.customer
-      lagThreshold: "50"
+      lagThreshold: "5"
       offsetResetPolicy: latest
       allowIdleConsumers: 'true'
       scaleToZeroOnInvalidOffset: 'true'
