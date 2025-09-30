@@ -139,8 +139,6 @@ kubectl apply -f src/kafka-connect.yaml
 
 # Aguardar o Kafka Connect ficar pronto
 kubectl -n eda-poc rollout status deploy/debezium-connect
-# Aguardar o Kafka Connect ficar pronto
-kubectl -n eda-poc rollout status deploy/debezium-connect
 ```
 
 **🔍 Conceitos Importantes:**
