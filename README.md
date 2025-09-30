@@ -48,21 +48,17 @@ kubectl -n kube-system rollout status deploy/metrics-server
 
 **🔍 O que está acontecendo?** Estamos configurando a fundação - um cluster Kubernetes com capacidades de coleta de métricas que o KEDA usará para decisões de scaling.
 
-## 🎭 Passo 2: Preparar o Namespace
-
-```bash
-# Criar namespace dedicado para nossa demo EDA
-kubectl create ns eda-poc
-```
+## ⚡ Passo 2 e 3: Preparar o Namespace e Instalar KEDA - O Auto-Scaler Orientado a Eventos
 
 **💡 Boa Prática**: Isolar recursos em namespaces dedicados melhora segurança, gerenciamento de recursos e troubleshooting.
-
-## ⚡ Passo 3: Instalar KEDA - O Auto-Scaler Orientado a Eventos
 
 **O que é KEDA?** KEDA é um Auto-Scaler Orientado a Eventos baseado em Kubernetes que pode escalar suas aplicações de 0 a n baseado em métricas externas como profundidade de fila de mensagens, resultados de consultas de banco de dados ou métricas customizadas.
 
 ```bash
 # Adicionar repositório Helm do KEDA
+# Criar namespace dedicado para nossa demo EDA
+kubectl create ns eda-poc
+
 helm repo add kedacore https://kedacore.github.io/charts
 helm repo update
 
