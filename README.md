@@ -86,7 +86,11 @@ kubectl -n keda rollout status deploy/keda-operator
 # Instalar PostgreSQL com configuração pronta para CDC
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-helm install postgresql bitnami/postgresql -n eda-poc -f src/pg-values.yaml
+
+helm install postgresql bitnami/postgresql -n eda-poc -f src/pg-values.yaml \
+--version 16.7.0 \
+--set image.repository=bitnamilegacy/postgresql \
+--set global.security.allowInsecureImages=true
 
 # Criar a tabela customer e schema inicial
 kubectl apply -f src/pg-bootstrap.yaml
