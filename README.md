@@ -184,11 +184,9 @@ spec:
 
 Let's see auto-scaling in action!
 
-```bash
-# Generate test data to trigger scaling events
-## 🧪 Passo 8: Demonstração ao Vivo
+## Generate test data to trigger scaling events
 
-Vamos ver o auto-scaling em ação!
+### 🧪 Passo 8: Demonstração ao Vivo
 
 ```bash
 # Gerar dados de teste para disparar eventos de scaling
