@@ -136,8 +136,6 @@ kubectl -n eda-poc wait kafka/my-cluster --for=condition=Ready --timeout=300s
 ```bash
 # Fazer deploy do Kafka Connect com Debezium e auto-registro do conector PostgreSQL
 kubectl apply -f src/kafka-connect.yaml
-# Fazer deploy do Kafka Connect com Debezium e auto-registro do conector PostgreSQL
-kubectl apply -f src/kafka-connect.yaml
 
 # Aguardar o Kafka Connect ficar pronto
 kubectl -n eda-poc rollout status deploy/debezium-connect
