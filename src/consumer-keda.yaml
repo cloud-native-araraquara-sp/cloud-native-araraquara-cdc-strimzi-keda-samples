@@ -4,7 +4,7 @@ metadata:
   name: cdc-consumer
   namespace: eda-poc
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: cdc-consumer
@@ -16,7 +16,7 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
       - name: consumer
-        image: bitnami/kafka:3
+        image: bitnamilegacy/kafka:3
         imagePullPolicy: IfNotPresent
         command: ["bash","-lc"]
         args:
@@ -62,9 +62,9 @@ metadata:
 spec:
   scaleTargetRef:
     name: cdc-consumer
-  minReplicaCount: 0          
+  minReplicaCount: 1          
   maxReplicaCount: 5          
-  pollingInterval: 10         
+  pollingInterval: 5         
   cooldownPeriod: 30          
   triggers:
   - type: kafka
@@ -73,21 +73,6 @@ spec:
       consumerGroup: eda-consumer
       topic: dbserver1.public.customer
       lagThreshold: "5"
-      offsetResetPolicy: latest
+      offsetResetPolicy: earliest
       allowIdleConsumers: 'true'
       scaleToZeroOnInvalidOffset: 'true'
-  advanced:
-    horizontalPodAutoscalerConfig:
-      behavior:
-        scaleUp:
-          stabilizationWindowSeconds: 30
-          policies:
-            - type: Percent
-              value: 200
-              periodSeconds: 15
-        scaleDown:
-          stabilizationWindowSeconds: 30
-          policies:
-            - type: Percent
-              value: 100
-              periodSeconds: 30
