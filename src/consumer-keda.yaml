@@ -4,7 +4,7 @@ metadata:
   name: cdc-consumer
   namespace: eda-poc
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: cdc-consumer
@@ -62,7 +62,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: cdc-consumer
-  minReplicaCount: 1          
+  minReplicaCount: 0          
   maxReplicaCount: 5          
   pollingInterval: 5         
   cooldownPeriod: 30          
